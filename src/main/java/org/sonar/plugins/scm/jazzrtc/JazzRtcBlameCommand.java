@@ -22,11 +22,11 @@ package org.sonar.plugins.scm.jazzrtc;
 import org.sonar.api.utils.System2;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.scm.BlameCommand;
@@ -39,67 +39,81 @@ import org.sonar.api.utils.command.TimeoutException;
 
 public class JazzRtcBlameCommand extends BlameCommand {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JazzRtcBlameCommand.class);
-  private static final int[] UNTRACKED_BLAME_RETURN_CODES = {1, 3, 30};
+  private static final Logger LOG = Loggers.get(JazzRtcBlameCommand.class);
+  private static final List<Integer> UNTRACKED_BLAME_RETURN_CODES = Arrays.asList(1, 3, 30);
   private final CommandExecutor commandExecutor;
   private final JazzRtcConfiguration config;
-  private final System2 system;
+  private final JazzLoginHandler jazzLoginHandler;
+  private final LscmCommandCreator lscmCommandCreator;
 
-  public JazzRtcBlameCommand(JazzRtcConfiguration configuration) {
-    this(CommandExecutor.create(), configuration);
-  }
 
   JazzRtcBlameCommand(CommandExecutor commandExecutor, JazzRtcConfiguration configuration) {
     this(commandExecutor, configuration, System2.INSTANCE);
+  }
+
+  public JazzRtcBlameCommand(JazzRtcConfiguration configuration) {
+    this(CommandExecutor.create(), configuration);
   }
   
   JazzRtcBlameCommand(CommandExecutor commandExecutor, JazzRtcConfiguration configuration, System2 system) {
     this.commandExecutor = commandExecutor;
     this.config = configuration;
-    this.system = system;
+    this.lscmCommandCreator = new LscmCommandCreator(system, configuration);
+    this.jazzLoginHandler = new JazzLoginHandler(system, commandExecutor, config);
   }
 
   @Override
   public void blame(BlameInput input, BlameOutput output) {
-    FileSystem fs = input.fileSystem();
-    LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
-    for (InputFile inputFile : input.filesToBlame()) {
-      blame(fs, inputFile, output);
-    }
+    final FileSystem fs = input.fileSystem();
+    LOG.info("Working directory SCM JAZZ: " + fs.baseDir().getAbsolutePath());
 
+    jazzLoginHandler.login();
+
+    for (InputFile inputFile : input.filesToBlame()) {
+      try {
+        blame(fs, inputFile, output);
+      } catch (Exception ex) {
+        LOG.warn("Exception blaming {}. {}", inputFile, ex.getMessage());
+      }
+
+    }
   }
 
   private void blame(FileSystem fs, InputFile inputFile, BlameOutput output) {
     String filename = inputFile.relativePath();
-    Command cl = createCommandLine(fs.baseDir(), filename);
-    JazzRtcBlameConsumer consumer = new JazzRtcBlameConsumer(filename);
+    LOG.info("SCM JAZZ: Blame " + filename);
+    Command cl = createAnnotateCommand(fs.baseDir(), filename);
+    JazzRtcBlameParser parser = new JazzRtcBlameParser(filename, config);
+
+    StringStreamConsumer stdout = new StringStreamConsumer();
     StringStreamConsumer stderr = new StringStreamConsumer();
 
-    int exitCode = execute(cl, consumer, stderr);
-    if (ArrayUtils.contains(UNTRACKED_BLAME_RETURN_CODES, exitCode)) {
-      LOG.debug("Skipping untracked file: {}. Annotate command exit code: {}", filename, exitCode);
+    int exitCode = executeAnnotate(cl, stdout, stderr);
+    if (UNTRACKED_BLAME_RETURN_CODES.contains(exitCode)) {
+      LOG.info("Skipping untracked file: {}. Annotate command exit code: {}. Error: {}", filename, exitCode, stderr.getOutput());
       return;
     } else if (exitCode != 0) {
       throw new IllegalStateException("The jazz annotate command [" + cl.toString() + "] failed: " + stderr.getOutput());
     }
 
-    List<BlameLine> lines = consumer.getLines();
+    List<BlameLine> lines = parser.parse(stdout.getOutput());
     if (lines.size() == inputFile.lines() - 1) {
       // SONARPLUGINS-3097 JazzRTC does not report blame on last empty line
       lines.add(lines.get(lines.size() - 1));
     }
+
     output.blameResult(inputFile, lines);
   }
 
-  public int execute(Command cl, StreamConsumer consumer, StreamConsumer stderr) {
-    LOG.debug("Executing: " + cl);
+  public int executeAnnotate(Command command, StreamConsumer consumer, StreamConsumer stderr) {
+    LOG.debug("Executing: " + command);
 
     try {
-      return commandExecutor.execute(cl, consumer, stderr, config.commandTimeout());
+      return commandExecutor.execute(command, consumer, stderr, config.commandTimeout());
     } catch (TimeoutException t) {
-      String errorMsg = "The jazz annotate command [" + cl.toString() + "] timed out";
+      String errorMsg = "The jazz annotate command timed out";
 
-      if (config.username() != null && config.password() != null) {
+      if (config.username() != null || config.password() != null) {
         throw new IllegalStateException(errorMsg, t);
       } else {
         throw new IllegalStateException(errorMsg + ". Please check if you are logged in or provide username and password", t);
@@ -107,26 +121,9 @@ public class JazzRtcBlameCommand extends BlameCommand {
     }
   }
 
-  private Command createCommandLine(File workingDirectory, String filename) {
-    Command cl = Command.create("lscm");
-    // SONARSCRTC-3 and SONARSCRTC-6
-    if(system.isOsWindows()) {
-      cl.setNewShell(true);
-    }
-    cl.setDirectory(workingDirectory);
-    cl.addArgument("annotate");
-    String username = config.username();
-    if (username != null) {
-      cl.addArgument("-u");
-      cl.addArgument(username);
-    }
-    String password = config.password();
-    if (password != null) {
-      cl.addArgument("-P");
-      cl.addMaskedArgument(password);
-    }
-    cl.addArgument(filename);
-    return cl;
+  private Command createAnnotateCommand(File workingDirectory, String filename) {
+    Command command = lscmCommandCreator.createLscmCommand("annotate", filename, "-j");
+    command.setDirectory(workingDirectory);
+    return command;
   }
-
 }
