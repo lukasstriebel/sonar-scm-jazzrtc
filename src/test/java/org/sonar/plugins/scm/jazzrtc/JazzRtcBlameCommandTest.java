@@ -86,15 +86,15 @@ public class JazzRtcBlameCommandTest {
     MockitoAnnotations.initMocks(this);
 
     baseDir = temp.newFolder();
-    fs = new DefaultFileSystem();
-    fs.setBaseDir(baseDir);
+    fs = new DefaultFileSystem(new File(""));
+    fs.setWorkDir(baseDir);
     when(input.fileSystem()).thenReturn(fs);
   }
 
   private DefaultInputFile createTestFile(String filePath, int numLines) throws IOException {
     File source = new File(baseDir, filePath);
     FileUtils.write(source, "sample content");
-    DefaultInputFile inputFile = new DefaultInputFile("foo", filePath).setLines(numLines).setAbsolutePath(new File(baseDir, filePath).getAbsolutePath());
+    DefaultInputFile inputFile = new DefaultInputFile("foo", filePath).setLines(numLines);//setAbsolutePath(new File(baseDir, filePath).getAbsolutePath());
     fs.add(inputFile);
     return inputFile;
   }

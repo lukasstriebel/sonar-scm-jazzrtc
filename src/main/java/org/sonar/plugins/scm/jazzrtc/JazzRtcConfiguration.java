@@ -22,8 +22,7 @@ package org.sonar.plugins.scm.jazzrtc;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.PropertyType;
 import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.config.Configuration;
+import org.sonar.api.config.Settings;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
-@ScannerSide()
 public class JazzRtcConfiguration {
 
   private static final String CATEGORY_JAZZ = "Jazz RTC";
@@ -47,9 +45,9 @@ public class JazzRtcConfiguration {
   
   private static String decodedPassword = null;
 
-  private final Configuration  settings;
+  private final Settings  settings;
 
-  public JazzRtcConfiguration(Configuration settings) {
+  public JazzRtcConfiguration(Settings settings) {
     this.settings = settings;
   }
 
@@ -121,13 +119,13 @@ public class JazzRtcConfiguration {
 
   @CheckForNull
   public String username() {
-    return settings.get(USER_PROP_KEY).orElse(null);
+    return settings.getString(USER_PROP_KEY);
   }
 
   @CheckForNull
   public String password() {
 	  if (decodedPassword == null) {
-		  decodedPassword = decode(settings.get(PASSWORD_PROP_KEY).orElse(null));
+		  decodedPassword = decode(settings.getString(PASSWORD_PROP_KEY));
 	  }
       return decodedPassword;
   }
@@ -149,22 +147,22 @@ public class JazzRtcConfiguration {
 
   @CheckForNull
   public String repository() {
-    return settings.get(REPOSITORY_PROP_KEY).orElse(null);
+    return settings.getString(REPOSITORY_PROP_KEY);
   }
 
   @CheckForNull
   public String lscmPath() {
-    return settings.get(LSCM_PROP_KEY).orElse(null);
+    return settings.getString(LSCM_PROP_KEY);
   }
   
   @CheckForNull
   public String filePath() {
-    return settings.get(FILE_PATH_PROP_KEY).orElse(null);
+    return settings.getString(FILE_PATH_PROP_KEY);
   }
   
   @CheckForNull
   public String proxy() {
-    return settings.get(PROXY_PROP_KEY).orElse(null);
+    return settings.getString(PROXY_PROP_KEY);
   }
   
   
