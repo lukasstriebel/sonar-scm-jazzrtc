@@ -15,7 +15,10 @@ You can also configure some optional properties:
 | Key | Description |
 | --- | ----------- |
 | sonar.jazzrtc.username | Username to be used for Jazz RTC authentication |
-| sonar.jazzrtc.password.secured | Password to be used for Jazz RTC authentication |
+| sonar.jazzrtc.password.secured | Encrypted Password to be used for Jazz RTC authentication |
+| sonar.jazzrtc.lscm | File Path to the lscm binary |
+| sonar.jazzrtc.proxy | Proxy server to be used to connect to the repository |
+| sonar.jazzrtc.mapfile | File Path to the json file mapping usernames to email addresses |
 
 ## Known Limitations
 * Blame is not executed in parallel since it is not supported by lscm annotate.
