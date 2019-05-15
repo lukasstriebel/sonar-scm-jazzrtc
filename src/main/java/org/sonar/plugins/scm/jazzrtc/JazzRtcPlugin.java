@@ -23,21 +23,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.sonar.api.Plugin;
 import org.sonar.api.SonarPlugin;
 
 public final class JazzRtcPlugin extends SonarPlugin {
 
-	  @Override
-	  public List<Object> getExtensions() {
-	    List<Object> result = new ArrayList<Object>();
-	    
-	    result.add(JazzRtcScmProvider.class);
-	    result.add(JazzRtcBlameCommand.class);
-	    result.add(JazzRtcConfiguration.class);
-	    result.addAll(JazzRtcConfiguration.getProperties());
-	    
-	    return Collections.unmodifiableList(result);
-	  }
+	@Override
+	public List<Object> getExtensions() {
+		List<Object> result = new ArrayList<Object>();
 
+		result.add(JazzRtcScmProvider.class);
+		result.add(JazzRtcBlameCommand.class);
+		result.add(JazzRtcConfiguration.class);
+		result.addAll(JazzRtcConfiguration.getProperties());
+
+		return Collections.unmodifiableList(result);
 	}
+
+}

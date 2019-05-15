@@ -19,14 +19,14 @@
  */
 package org.sonar.plugins.scm.jazzrtc;
 
-import org.junit.Test;
-
 import static org.fest.assertions.Assertions.assertThat;
+
+import org.junit.Test;
 
 public class JazzRtcPluginTest {
 
   @Test
   public void getExtensions() {
-    assertThat(new JazzRtcPlugin().getExtensions()).hasSize(5);
+    assertThat(new JazzRtcPlugin().getExtensions()).hasSize(6);
   }
 }

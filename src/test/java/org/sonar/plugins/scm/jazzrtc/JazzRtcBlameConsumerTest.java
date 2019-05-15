@@ -42,13 +42,13 @@ public class JazzRtcBlameConsumerTest {
 
   @Test
   public void testAuthorParsing() {
-	  /*StringStreamConsumer consumer = new JazzRtcBlameConsumer("dummy.java");
+    JazzRtcBlameConsumer consumer = new JazzRtcBlameConsumer("dummy.java");
 
     for (String l : lines) {
       consumer.consumeLine(l);
     }
 
     assertThat(consumer.getLines()).hasSize(lines.length);
-    assertThat(consumer.getLines()).extracting("author").containsOnly("Duarte");*/
+    assertThat(consumer.getLines()).extracting("author").containsOnly("Duarte");
   }
 }
