@@ -68,9 +68,9 @@ public class JazzRtcBlameParser {
         }
 
         String changeset = String.format("%s (%s)", workitem, changesetId);
-        //String username = userNameResolver.findUserIdByName(author);
-        //BlameLine line = new BlameLine().date(modifiedDate).revision(changeset).author(username);
-        //lines.add(line);
+        String username = userNameResolver.findUserIdByName(author);
+        BlameLine line = new BlameLine().date(modifiedDate).revision(changeset).author(username);
+        lines.add(line);
     }
 
     return lines;
