@@ -46,28 +46,27 @@ public class UserNameResolver {
         if (displayNameToLoginMap.isEmpty()) {
 	    	JSONParser jsonParser = new JSONParser();
 	        String pathToFile = config.filePath();
-	         
-	        try (FileReader reader = new FileReader(pathToFile))
-	        {
-	            //Read JSON file
-	        	JSONArray team = (JSONArray) jsonParser.parse(reader);             
-	            //Iterate over team array
-	            for (Object ob : team) {
-	            	parseMemberObject((JSONObject) ob);
-	            }
-	 
-	        } catch (FileNotFoundException e) {
-	        	LOG.error(e.getMessage());
-	        } catch (IOException e) {
-	        	LOG.error(e.getMessage());
-	        } catch (ParseException e) {
-	        	LOG.error(e.getMessage());
+	        if (pathToFile != null) { 
+				try (FileReader reader = new FileReader(pathToFile)) {
+					// Read JSON file
+					JSONArray team = (JSONArray) jsonParser.parse(reader);
+					// Iterate over team array
+					for (Object ob : team) {
+						parseMemberObject((JSONObject) ob);
+					}
+
+				} catch (FileNotFoundException e) {
+					LOG.error(e.getMessage());
+				} catch (IOException e) {
+					LOG.error(e.getMessage());
+				} catch (ParseException e) {
+					LOG.error(e.getMessage());
+				}
 	        }
         }
     }
  
-    private void parseMemberObject(JSONObject member)
-    {
+    private void parseMemberObject(JSONObject member) {
         String name = (String) member.get("name");
         String email = (String) member.get("email");
         LOG.info("Added Mapping from '{}' to '{}'", name, email);
